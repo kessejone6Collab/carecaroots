@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: 20
       - name: Run regression tests
-        run: node --test tests/guarantees.test.js
+        run: node --test "tests/*.test.js"
