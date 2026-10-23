@@ -133,3 +133,12 @@ test('condition selectors include only mathematically feasible zero-to-maximum h
   app.set('lotofacil', Array.from({ length: 15 }, (_, i) => i + 1), 5, 5);
   assert.deepEqual(app.element('hits').options.map(option => Number(option.value)), [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 });
+
+test('conferência reports the best hit count across generated games', () => {
+  const app = loadApp();
+  app.set('mega', [1, 2, 3, 4, 5, 6], 6, 6);
+  app.generate();
+  app.setDraw([1, 2, 3, 4, 5, 6]);
+  app.check();
+  assert.match(app.element('checkResult').textContent, /Melhor jogo: 6 acertos/);
+});
