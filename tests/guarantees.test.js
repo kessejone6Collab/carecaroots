@@ -24,6 +24,8 @@ class Element {
   get innerHTML() { return this.html; }
   append(value) { this.children.push(value); }
   add(value) { this.options.push(value); }
+  click() { if (this.download) this.contextDownload?.(this); }
+  remove() {}
 }
 
 function loadApp() {
@@ -33,20 +35,24 @@ function loadApp() {
   const script = match[1].replace(/render\(\);\s*$/, '');
   const elements = {};
   const storage = {};
+  const downloads = [];
+  const blobs = new Map();
   const document = {
     getElementById(id) { return elements[id] ??= new Element(); },
-    createElement() { return new Element(); },
+    createElement() { const el = new Element(); el.contextDownload = item => downloads.push({ filename: item.download, blob: blobs.get(item.href) }); return el; },
     body: { append() {} },
   };
   const context = {
+    __downloads: downloads,
+    __storage: storage,
     document,
     localStorage: {
       getItem(key) { return storage[key] ?? null; },
       setItem(key, value) { storage[key] = String(value); },
     },
     Option: function (text, value) { this.text = String(text); this.value = String(value); },
-    URL: { createObjectURL() { return ''; }, revokeObjectURL() {} },
-    Blob: function () {},
+    URL: { createObjectURL(blob) { const url = `blob:${blobs.size}`; blobs.set(url, blob); return url; }, revokeObjectURL() {} },
+    Blob: function (parts, options) { this.parts = parts; this.type = options.type; },
     setTimeout() {},
     confirm() { return true; },
     Date, JSON, Math, Number, Array, Set, Map, Error,
@@ -54,7 +60,8 @@ function loadApp() {
   vm.createContext(context);
   vm.runInContext(`${script}
     globalThis.appTest = {
-      render, generate, save, check, getHistory, combos, overlap,
+      render, generate, save, check, getHistory, combos, overlap, backup, exportTxt, restoreHistory,
+      downloads: globalThis.__downloads, clearHistory() { globalThis.__storage['loto-careca-roots'] = null; },
       set(kindValue, numbers, condition, guarantee) {
         kind = kindValue; chosen = numbers; mode = 'cover'; render();
         $('hits').value = String(condition);
@@ -141,4 +148,31 @@ test('conferência reports the best hit count across generated games', () => {
   app.setDraw([1, 2, 3, 4, 5, 6]);
   app.check();
   assert.match(app.element('checkResult').textContent, /Melhor jogo: 6 acertos/);
+});
+
+
+test('TXT, backup and restore preserve saved games', async () => {
+  const app = loadApp();
+  app.set('mega', [1, 2, 3, 4, 5, 6], 6, 6);
+  app.generate();
+  app.exportTxt();
+  app.save();
+  app.backup();
+  assert.deepEqual(app.downloads.map(file => file.filename), [
+    'careca-roots-jogos.txt', 'careca-roots-historico.json',
+  ]);
+  assert.match(app.downloads[0].blob.parts.join(''), /Mega-Sena/);
+  const backupText = app.downloads[1].blob.parts.join('');
+  assert.equal(JSON.parse(backupText).history.length, 1);
+
+  app.clearHistory();
+  const event = {
+    target: {
+      files: [{ size: Buffer.byteLength(backupText), async text() { return backupText; } }],
+      value: 'selected',
+    },
+  };
+  await app.restoreHistory(event);
+  assert.equal(app.getHistory().length, 1);
+  assert.equal(event.target.value, '');
 });
