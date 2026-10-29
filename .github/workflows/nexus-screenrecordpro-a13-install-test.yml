@@ -1,4 +1,4 @@
-name: Build A13 install test APK
+name: Nexus Screen Record Pro A13 install test
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - codex/nexus-screenrecordpro-a13-install-review-20261029
     paths:
       - "NexusScreenRecordPro/**"
+      - ".github/workflows/nexus-screenrecordpro-a13-install-test.yml"
 
 permissions:
   contents: read
