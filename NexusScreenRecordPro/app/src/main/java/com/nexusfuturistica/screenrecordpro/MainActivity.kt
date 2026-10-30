@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import android.media.projection.MediaProjectionConfig
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -37,7 +38,7 @@ class MainActivity : Activity() {
             start.setBackgroundColor(if (running) 0xFFB3263E.toInt() else if (session) 0xFF675A2B.toInt() else 0xFF087A9B.toInt())
             val error = prefs.getString("error", null)
             state.text = when {
-                running -> "●  GRAVANDO AGORA\nControle oculto para deixar a imagem limpa. Para parar, abra as notificações e toque em Parar gravação."
+                running -> "●  GRAVANDO AGORA\nToque na bolha para parar. No seletor do Android, escolha um app para gravar sem a bolha no vídeo."
                 session -> "CONTROLE FLUTUANTE ATIVO\nVá para o jogo ou vídeo e toque na bolha para começar."
                 error != null -> "Não iniciou: $error"
                 else -> "Ative o controle e grave direto no jogo, YouTube ou qualquer tela."
@@ -98,8 +99,8 @@ class MainActivity : Activity() {
         content.addView(gallery, params(bottom = 18))
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
-        content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno; depois confirme ‘Iniciar agora’. O microfone não é usado.\n3. Abra o jogo, YouTube ou outro app e toque na bolha para começar. Ela some durante a gravação para não cobrir nem deixar marca preta no vídeo.\n4. Para parar, abra as notificações e toque em Parar gravação. A bolha volta quando o vídeo for salvo.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.1 para A13\nVídeo limpo, sem controle sobreposto", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno.\n3. No seletor do Android 14, escolha ‘um app’ e selecione o jogo ou YouTube. A bolha fica visível para você, mas só o app escolhido entra no vídeo.\n4. Toque na bolha para parar. A notificação também tem o botão Parar.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.2 para A13\nControle na tela, captura de um app", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
@@ -154,7 +155,10 @@ class MainActivity : Activity() {
         state.text = "Aguardando autorização de captura da tela…"
         try {
             val projection = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            @Suppress("DEPRECATION") startActivityForResult(projection.createScreenCaptureIntent(), REQUEST_CAPTURE)
+            val captureIntent = if (android.os.Build.VERSION.SDK_INT >= 34) {
+                projection.createScreenCaptureIntent(MediaProjectionConfig.createConfigForUserChoice(this))
+            } else projection.createScreenCaptureIntent()
+            @Suppress("DEPRECATION") startActivityForResult(captureIntent, REQUEST_CAPTURE)
         } catch (t: Throwable) {
             showError("Não abriu a autorização: ${t.localizedMessage ?: t.javaClass.simpleName}")
         }

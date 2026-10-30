@@ -13,11 +13,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao6"
+        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao7"
         minSdk = 29
         targetSdk = 34
-        versionCode = 16
-        versionName = "0.8.1-a13-tela-limpa"
+        versionCode = 17
+        versionName = "0.8.2-a13-controle-na-tela"
     }
 
     signingConfigs {

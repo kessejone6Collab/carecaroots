@@ -132,9 +132,10 @@ class ScreenRecordService : Service() {
 
     private fun startCapture() {
         if (!sessionActive || recording || stopping.get()) return
-        // Remove the control before attaching the encoder surface to the
-        // projection. A secure overlay becomes a black rectangle in recordings.
-        removeFloatingControls()
+        // Android 14 can project a single selected app window, excluding this
+        // recorder's separate overlay window while leaving it available to tap.
+        // On older Android versions, hide the bubble and rely on the notification.
+        if (Build.VERSION.SDK_INT < 34) removeFloatingControls()
         try {
             stopping.set(false)
             closeAfterStop = false
@@ -173,7 +174,10 @@ class ScreenRecordService : Service() {
             getSharedPreferences("recorder", MODE_PRIVATE).edit().putBoolean("running", true).putLong("started", System.currentTimeMillis()).apply()
             worker = Thread({ drainEncoder() }, "NexusRecorderEncoder").apply { start() }
             audioWorker = Thread({ captureAndDrainAudio() }, "NexusPlaybackAudio").apply { start() }
-            updateNotification("Gravando • use Parar nesta notificação; o controle volta ao encerrar")
+            updateNotification(if (Build.VERSION.SDK_INT >= 34)
+                "Gravação ativa • toque na bolha para parar"
+            else "Gravação ativa • use Parar nesta notificação")
+            if (Build.VERSION.SDK_INT >= 34) refreshFloatingControl()
         } catch (t: Throwable) {
             Log.e(TAG, "Falha ao iniciar gravação", t)
             getSharedPreferences("recorder", MODE_PRIVATE).edit()
