@@ -10,7 +10,7 @@ import android.media.MediaRecorder
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.*
-import android.media.projection.AudioPlaybackCaptureConfiguration
+import android.media.AudioPlaybackCaptureConfiguration
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
