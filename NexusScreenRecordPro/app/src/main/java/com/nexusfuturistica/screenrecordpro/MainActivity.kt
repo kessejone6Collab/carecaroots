@@ -9,8 +9,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.provider.Settings
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -26,16 +28,23 @@ class MainActivity : Activity() {
         override fun run() {
             val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
             val running = prefs.getBoolean("running", false)
-            start.text = if (running) "■  PARAR GRAVAÇÃO" else "🔴  INICIAR GRAVAÇÃO"
-            start.setBackgroundColor(if (running) 0xFFB3263E.toInt() else 0xFF087A9B.toInt())
+            val session = prefs.getBoolean("session", false)
+            start.text = when {
+                running -> "■  PARAR GRAVAÇÃO"
+                session -> "✕  DESATIVAR CONTROLES"
+                else -> "●  ATIVAR CONTROLE FLUTUANTE"
+            }
+            start.setBackgroundColor(if (running) 0xFFB3263E.toInt() else if (session) 0xFF675A2B.toInt() else 0xFF087A9B.toInt())
             val error = prefs.getString("error", null)
             state.text = when {
-                running -> "●  GRAVANDO AGORA\\nTela e áudio interno ativos. Você pode trocar de aplicativo."
+                running -> "●  GRAVANDO AGORA\nTela e áudio interno ativos. Você pode trocar de aplicativo."
+                session -> "CONTROLE FLUTUANTE ATIVO\nVá para o jogo ou vídeo e toque na bolha para começar."
                 error != null -> "Não iniciou: $error"
-                else -> "Pronto para gravar • sem internet, anúncios ou marca-d’água"
+                else -> "Ative o controle e grave direto no jogo, YouTube ou qualquer tela."
             }
-            state.setTextColor(if (running) 0xFFFF6577.toInt() else 0xFFCCD7E4.toInt())
-            state.setBackgroundColor(if (running) 0xFF321520.toInt() else 0x00000000)
+            state.setTextColor(if (running) 0xFFFF6577.toInt() else if (session) 0xFFFFC857.toInt() else 0xFFCCD7E4.toInt())
+            state.setBackgroundColor(if (running) 0xFF321520.toInt() else if (session) 0xFF292414.toInt() else 0x00000000)
+            state.setPadding(dp(if (running || session) 10 else 0), dp(if (running || session) 10 else 4), dp(if (running || session) 10 else 0), dp(if (running || session) 10 else 4))
             val started = prefs.getLong("started", 0L)
             val seconds = if (started > 0L) ((System.currentTimeMillis() - started) / 1000).coerceAtLeast(0) else 0
             val elapsed = String.format(Locale.US, "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
@@ -59,8 +68,21 @@ class MainActivity : Activity() {
 
         content.addView(label("PERFIL DE GRAVAÇÃO", 13, 0xFFFFC857.toInt(), true), matchWrap())
         mode = Spinner(this)
-        mode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("Econômico • 720p / 30 FPS", "Equilibrado • 720p / 30 FPS", "Alta qualidade • até 1080p / 30 FPS"))
-        mode.setSelection(prefs.getInt("mode", 1).coerceIn(0, 2))
+        val profiles = listOf("Leve • 720p / 30 FPS", "Equilibrado • até 900p / 30 FPS", "Alta qualidade • máximo suportado / 30 FPS")
+        val profileAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, profiles) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View =
+                (super.getView(position, convertView, parent) as TextView).apply { setTextColor(0xFFF4F7FB.toInt()); textSize = 16f }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View =
+                (super.getDropDownView(position, convertView, parent) as TextView).apply {
+                    setTextColor(0xFF07111F.toInt())
+                    setBackgroundColor(0xFFE9EFF7.toInt())
+                    setPadding(dp(16), dp(12), dp(16), dp(12))
+                    textSize = 16f
+                }
+        }.apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        mode.adapter = profileAdapter
+        mode.setSelection(prefs.getInt("mode", 2).coerceIn(0, 2))
         mode.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) { prefs.edit().putInt("mode", position).apply() }
@@ -76,8 +98,8 @@ class MainActivity : Activity() {
         content.addView(gallery, params(bottom = 18))
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
-        content.addView(label("1. Escolha um perfil e toque em Gravar.\n2. Autorize as notificações para ver o indicador e o cronômetro durante a gravação. Permita o áudio interno e confirme ‘Iniciar agora’; o microfone não é usado.\n3. Abra o aplicativo ou vídeo que quer registrar. A notificação do Nexus mostra o tempo e oferece o botão Parar.\n4. Para encerrar, volte aqui e toque em Parar ou use a notificação.\n\nAlguns apps e conteúdos protegidos podem bloquear a captura de áudio ou imagem.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.6.0 para A13\nVídeo e áudio interno salvos em Movies/NexusScreenRecordPro", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno; depois confirme ‘Iniciar agora’. O microfone não é usado.\n3. A bolha aparece na tela. Abra o jogo, YouTube ou outro app e toque nela para começar; toque de novo para parar.\n4. Arraste a bolha para mover. O X aparece enquanto você arrasta; solte nele para remover o controle.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.7.0 para A13\nImagem otimizada e áudio interno salvos na galeria", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
@@ -88,10 +110,29 @@ class MainActivity : Activity() {
         val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
         if (prefs.getBoolean("running", false)) {
             runCatching { startService(Intent(this, ScreenRecordService::class.java).setAction(ScreenRecordService.ACTION_STOP)) }
-                .onFailure { showError("Não consegui parar: ${it.localizedMessage ?: it.javaClass.simpleName}") }
+                .onFailure { showError("Não consegui parar a gravação.") }
+            return
+        }
+        if (prefs.getBoolean("session", false)) {
+            runCatching { startService(Intent(this, ScreenRecordService::class.java).setAction(ScreenRecordService.ACTION_CLOSE)) }
+                .onFailure { showError("Não consegui desativar os controles.") }
             return
         }
         prefs.edit().remove("error").apply()
+        if (android.os.Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            state.text = "Ative ‘aparecer sobre outros apps’ para mostrar a bolha."
+            try {
+                @Suppress("DEPRECATION")
+                startActivityForResult(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")), REQUEST_OVERLAY)
+            } catch (_: Throwable) {
+                showError("Não consegui abrir a permissão dos controles flutuantes.")
+            }
+            return
+        }
+        requestSessionPermissions()
+    }
+
+    private fun requestSessionPermissions() {
         if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             state.text = "Autorize as notificações para ver o indicador e o cronômetro."
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
@@ -137,15 +178,20 @@ class MainActivity : Activity() {
     @Deprecated("Android activity result API for broad API compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_OVERLAY) {
+            if (Settings.canDrawOverlays(this)) requestSessionPermissions()
+            else showError("Permita ‘aparecer sobre outros apps’ para usar o botão flutuante.")
+            return
+        }
         if (requestCode == REQUEST_CAPTURE) {
             if (resultCode != RESULT_OK || data == null) {
                 showError("Autorização de captura cancelada. Toque em Gravar e escolha ‘Iniciar agora’.")
                 return
             }
-            state.text = "Autorizado • iniciando gravador…"
+            state.text = "Autorização recebida • preparando o controle flutuante…"
             try {
                 val intent = Intent(this, ScreenRecordService::class.java).apply {
-                    action = ScreenRecordService.ACTION_START
+                    action = ScreenRecordService.ACTION_START_SESSION
                     putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
                     putExtra(ScreenRecordService.EXTRA_DATA, data)
                     putExtra(ScreenRecordService.EXTRA_MODE, mode.selectedItemPosition)
@@ -187,7 +233,7 @@ class MainActivity : Activity() {
     private fun matchWrap() = LinearLayout.LayoutParams(-1, -2)
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
-    companion object { private const val REQUEST_CAPTURE = 341; private const val REQUEST_AUDIO = 342; private const val REQUEST_NOTIFICATIONS = 343 }
+    companion object { private const val REQUEST_CAPTURE = 341; private const val REQUEST_AUDIO = 342; private const val REQUEST_NOTIFICATIONS = 343; private const val REQUEST_OVERLAY = 344 }
 }
 
 private object AlertDialogCompat {

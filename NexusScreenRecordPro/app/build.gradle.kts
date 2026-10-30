@@ -13,11 +13,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao3"
+        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao4"
         minSdk = 29
         targetSdk = 34
-        versionCode = 13
-        versionName = "0.6.0-a13-gravacao-visivel"
+        versionCode = 14
+        versionName = "0.7.0-a13-controle-flutuante"
     }
 
     signingConfigs {
