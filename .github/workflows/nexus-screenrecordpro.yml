@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -48,10 +48,20 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/apksigner" verify --verbose --print-certs "$APK"
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging "$APK" | grep -E "^(package:|sdkVersion:|targetSdkVersion:)"
 
+      - name: Publish direct APK download
+        run: |
+          mkdir -p NexusScreenRecordPro/dist
+          cp NexusScreenRecordPro/app/build/outputs/apk/debug/app-debug.apk NexusScreenRecordPro/dist/NexusScreenRecordPro-A13-Oficial-1.0.0.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add NexusScreenRecordPro/dist/NexusScreenRecordPro-A13-Oficial-1.0.0.apk
+          git commit -m "Publish Nexus Screen Record Pro 1.0.0 APK [skip ci]"
+          git push
+
       - name: Upload official APK
         uses: actions/upload-artifact@v4
         with:
           name: NexusScreenRecordPro-A13-Oficial-1.0.0
-          path: NexusScreenRecordPro/app/build/outputs/apk/debug/app-debug.apk
+          path: NexusScreenRecordPro/dist/NexusScreenRecordPro-A13-Oficial-1.0.0.apk
           if-no-files-found: error
           retention-days: 14
