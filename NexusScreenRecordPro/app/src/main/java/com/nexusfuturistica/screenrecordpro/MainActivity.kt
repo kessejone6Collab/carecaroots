@@ -100,7 +100,7 @@ class MainActivity : Activity() {
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
         content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno.\n3. No seletor do Android 14, escolha ‘um app’ e selecione o jogo ou YouTube. A bolha fica visível para você, mas só o app escolhido entra no vídeo.\n4. Toque na bolha para parar. A notificação também tem o botão Parar.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.2 para A13\nControle na tela, captura de um app", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  versão oficial 1.0.0 para A13\nControle na tela, captura de um app", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
