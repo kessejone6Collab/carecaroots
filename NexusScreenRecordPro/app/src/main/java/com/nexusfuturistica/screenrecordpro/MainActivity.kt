@@ -26,16 +26,20 @@ class MainActivity : Activity() {
         override fun run() {
             val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
             val running = prefs.getBoolean("running", false)
-            start.text = if (running) "PARAR GRAVAÇÃO" else "●  GRAVAR AGORA"
-            start.setBackgroundColor(if (running) 0xFF9C2940.toInt() else 0xFF087A9B.toInt())
+            start.text = if (running) "■  PARAR GRAVAÇÃO" else "🔴  INICIAR GRAVAÇÃO"
+            start.setBackgroundColor(if (running) 0xFFB3263E.toInt() else 0xFF087A9B.toInt())
             val error = prefs.getString("error", null)
             state.text = when {
-                running -> "GRAVANDO • pode trocar de aplicativo; a captura continua em segundo plano"
+                running -> "●  GRAVANDO AGORA\\nTela e áudio interno ativos. Você pode trocar de aplicativo."
                 error != null -> "Não iniciou: $error"
                 else -> "Pronto para gravar • sem internet, anúncios ou marca-d’água"
             }
+            state.setTextColor(if (running) 0xFFFF6577.toInt() else 0xFFCCD7E4.toInt())
+            state.setBackgroundColor(if (running) 0xFF321520.toInt() else 0x00000000)
             val started = prefs.getLong("started", 0L)
-            timer.text = if (running && started > 0) "${(System.currentTimeMillis() - started) / 1000}s" else ""
+            val seconds = if (started > 0L) ((System.currentTimeMillis() - started) / 1000).coerceAtLeast(0) else 0
+            val elapsed = String.format(Locale.US, "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+            timer.text = if (running && started > 0) elapsed else ""
             ui.postDelayed(this, 500)
         }
     }
@@ -64,7 +68,7 @@ class MainActivity : Activity() {
         content.addView(mode, params(top = 5, bottom = 16))
         state = label("Pronto para gravar", 14, 0xFFCCD7E4.toInt(), false)
         content.addView(state, matchWrap())
-        timer = label("", 14, 0xFFFFC857.toInt(), true)
+        timer = label("", 24, 0xFFFFC857.toInt(), true).apply { typeface = android.graphics.Typeface.MONOSPACE }
         content.addView(timer, params(bottom = 6))
         start = Button(this).apply { textSize = 16f; setTextColor(0xFFFFFFFF.toInt()); isAllCaps = false; setPadding(dp(14), dp(12), dp(14), dp(12)); setOnClickListener { onRecordTap() } }
         content.addView(start, params(top = 8, bottom = 14))
@@ -72,8 +76,8 @@ class MainActivity : Activity() {
         content.addView(gallery, params(bottom = 18))
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
-        content.addView(label("1. Escolha um perfil e toque em Gravar.\n2. Permita o áudio interno e confirme ‘Iniciar agora’ na janela do Android. A permissão de áudio é usada para captar o som reproduzido por apps; o microfone não é usado.\n3. Depois, abra o aplicativo ou vídeo que quer registrar. A gravação continua em segundo plano, capturando a imagem e o áudio interno permitido.\n4. Para encerrar, volte aqui e toque em Parar ou use a notificação.\n\nAlguns apps e conteúdos protegidos podem bloquear a captura de áudio ou imagem.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.5.0 para A13\nVídeo e áudio interno salvos em Movies/NexusScreenRecordPro", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("1. Escolha um perfil e toque em Gravar.\n2. Autorize as notificações para ver o indicador e o cronômetro durante a gravação. Permita o áudio interno e confirme ‘Iniciar agora’; o microfone não é usado.\n3. Abra o aplicativo ou vídeo que quer registrar. A notificação do Nexus mostra o tempo e oferece o botão Parar.\n4. Para encerrar, volte aqui e toque em Parar ou use a notificação.\n\nAlguns apps e conteúdos protegidos podem bloquear a captura de áudio ou imagem.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.6.0 para A13\nVídeo e áudio interno salvos em Movies/NexusScreenRecordPro", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
@@ -88,6 +92,15 @@ class MainActivity : Activity() {
             return
         }
         prefs.edit().remove("error").apply()
+        if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            state.text = "Autorize as notificações para ver o indicador e o cronômetro."
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+            return
+        }
+        requestAudioPermissionOrCapture()
+    }
+
+    private fun requestAudioPermissionOrCapture() {
         if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             state.text = "Autorize o áudio interno; o microfone não será usado."
             requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_AUDIO)
@@ -109,9 +122,15 @@ class MainActivity : Activity() {
     @Deprecated("Android permission callback for broad API compatibility")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_AUDIO) {
-            if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) launchCaptureRequest()
-            else showError("Permita o áudio para gravar o som interno. Nenhum microfone é usado.")
+        when (requestCode) {
+            REQUEST_NOTIFICATIONS -> {
+                if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) requestAudioPermissionOrCapture()
+                else showError("Permita as notificações nas configurações do app para acompanhar o ícone, o cronômetro e o botão Parar.")
+            }
+            REQUEST_AUDIO -> {
+                if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) launchCaptureRequest()
+                else showError("Permita o áudio para gravar o som interno. Nenhum microfone é usado.")
+            }
         }
     }
 
@@ -132,7 +151,7 @@ class MainActivity : Activity() {
                     putExtra(ScreenRecordService.EXTRA_MODE, mode.selectedItemPosition)
                 }
                 if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
-                Toast.makeText(this, "Captura autorizada. O gravador está iniciando.", Toast.LENGTH_LONG).show()
+                
             } catch (t: Throwable) {
                 showError("Não consegui iniciar o serviço: ${t.localizedMessage ?: t.javaClass.simpleName}")
             }
@@ -168,7 +187,7 @@ class MainActivity : Activity() {
     private fun matchWrap() = LinearLayout.LayoutParams(-1, -2)
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
-    companion object { private const val REQUEST_CAPTURE = 341; private const val REQUEST_AUDIO = 342 }
+    companion object { private const val REQUEST_CAPTURE = 341; private const val REQUEST_AUDIO = 342; private const val REQUEST_NOTIFICATIONS = 343 }
 }
 
 private object AlertDialogCompat {

@@ -13,11 +13,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao2"
+        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao3"
         minSdk = 29
         targetSdk = 34
-        versionCode = 12
-        versionName = "0.5.0-a13-internal-audio"
+        versionCode = 13
+        versionName = "0.6.0-a13-gravacao-visivel"
     }
 
     signingConfigs {

@@ -33,6 +33,7 @@ class ScreenRecordService : Service() {
     private var projection: MediaProjection? = null
     private var display: VirtualDisplay? = null
     private var encoder: MediaCodec? = null
+    private var videoInputSurface: android.view.Surface? = null
     private var muxer: MediaMuxer? = null
     private var outputPfd: android.os.ParcelFileDescriptor? = null
     private var outputUri: android.net.Uri? = null
@@ -76,7 +77,7 @@ class ScreenRecordService : Service() {
             prepareEncoder()
             prepareAudioCapture()
             val density = resources.displayMetrics.densityDpi
-            display = projection?.createVirtualDisplay("NexusScreenRecordPro", displayWidth, displayHeight, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encoder!!.createInputSurface(), null, null)
+            display = projection?.createVirtualDisplay("NexusScreenRecordPro", displayWidth, displayHeight, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, videoInputSurface ?: error("Superfície do codificador não foi preparada"), null, null)
                 ?: error("Android não criou o display virtual")
             audioRecord?.startRecording()
             recording = true; stopping.set(false)
@@ -139,7 +140,11 @@ class ScreenRecordService : Service() {
             setInteger(MediaFormat.KEY_BIT_RATE, bitRate); setInteger(MediaFormat.KEY_FRAME_RATE, 30); setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
             if (Build.VERSION.SDK_INT >= 23) setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR)
         }
-        encoder = MediaCodec.createByCodecName(selected.name).apply { configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE); start() }
+        encoder = MediaCodec.createByCodecName(selected.name).apply {
+            configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            videoInputSurface = createInputSurface()
+            start()
+        }
         getSharedPreferences("recorder", MODE_PRIVATE).edit().putString("codec", selected.name).putInt("width", displayWidth).putInt("height", displayHeight).apply()
     }
 
@@ -321,6 +326,7 @@ class ScreenRecordService : Service() {
         try { display?.release() } catch (_: Exception) { }; display = null
         try { encoder?.stop() } catch (_: Exception) { }
         try { encoder?.release() } catch (_: Exception) { }; encoder = null
+        try { videoInputSurface?.release() } catch (_: Exception) { }; videoInputSurface = null
         try { audioRecord?.release() } catch (_: Exception) { }; audioRecord = null
         try { audioEncoder?.stop() } catch (_: Exception) { }
         try { audioEncoder?.release() } catch (_: Exception) { }; audioEncoder = null
@@ -349,10 +355,23 @@ class ScreenRecordService : Service() {
     }
     private fun notification(text: String): Notification {
         val stop = Intent(this, ScreenRecordService::class.java).setAction(ACTION_STOP)
-        val pending = PendingIntent.getService(this, 5, stop, PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0
+        val pending = PendingIntent.getService(this, 5, stop, flags)
+        val openApp = PendingIntent.getActivity(this, 6, Intent(this, MainActivity::class.java), flags)
+        val started = getSharedPreferences("recorder", MODE_PRIVATE).getLong("started", 0L)
         return Notification.Builder(this, if (Build.VERSION.SDK_INT >= 26) CHANNEL_ID else "")
-            .setSmallIcon(android.R.drawable.presence_video_online).setContentTitle("NEXUS SCREEN RECORD PRO").setContentText(text)
-            .setOngoing(true).addAction(Notification.Action.Builder(null, "Parar", pending).build()).build()
+            .setSmallIcon(R.drawable.ic_recording_dot)
+            .setContentTitle(if (recording) "● NEXUS SCREEN RECORD PRO" else "NEXUS SCREEN RECORD PRO")
+            .setContentText(text)
+            .setWhen(if (started > 0L) started else System.currentTimeMillis())
+            .setUsesChronometer(recording && started > 0L)
+            .setShowWhen(true)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setContentIntent(openApp)
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .addAction(Notification.Action.Builder(null, "Parar", pending).build())
+            .build()
     }
     private fun updateNotification(text: String) { (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIFICATION_ID, notification(text)) }
     private fun even(value: Int) = (value.coerceAtLeast(2) / 2) * 2
