@@ -13,17 +13,15 @@ android {
     }
 
     defaultConfig {
-        // Fresh package ID for this install attempt avoids conflicts with prior test packages.
-        applicationId = "com.nexusfuturistica.screenrecordpro.a13installfix"
+        applicationId = "com.nexusfuturistica.screenrecordpro.a13gravacao2"
         minSdk = 29
         targetSdk = 34
-        versionCode = 11
-        versionName = "0.4.1-a13-install-fix"
+        versionCode = 12
+        versionName = "0.5.0-a13-internal-audio"
     }
 
     signingConfigs {
         getByName("debug") {
-            // Include both signature formats for compatibility with Android installers.
             enableV1Signing = true
             enableV2Signing = true
         }

@@ -2,7 +2,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <application android:theme="@style/AppTheme" android:label="NEXUS SCREEN RECORD PRO" android:icon="@drawable/ic_nexus_record" android:roundIcon="@drawable/ic_nexus_record" android:usesCleartextTraffic="false" android:allowBackup="false">
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <application android:theme="@style/AppTheme" android:label="NEXUS RECORD PRO TESTE 2" android:icon="@drawable/ic_nexus_record" android:roundIcon="@drawable/ic_nexus_record" android:usesCleartextTraffic="false" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>

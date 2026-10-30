@@ -24,11 +24,17 @@ class MainActivity : Activity() {
     private val ui = Handler(Looper.getMainLooper())
     private val poll = object : Runnable {
         override fun run() {
-            val running = getSharedPreferences("recorder", MODE_PRIVATE).getBoolean("running", false)
+            val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
+            val running = prefs.getBoolean("running", false)
             start.text = if (running) "PARAR GRAVAÇÃO" else "●  GRAVAR AGORA"
             start.setBackgroundColor(if (running) 0xFF9C2940.toInt() else 0xFF087A9B.toInt())
-            state.text = if (running) "GRAVANDO • mantenha esta notificação ativa" else "Pronto para gravar • sem internet, anúncios ou marca-d’água"
-            val started = getSharedPreferences("recorder", MODE_PRIVATE).getLong("started", 0L)
+            val error = prefs.getString("error", null)
+            state.text = when {
+                running -> "GRAVANDO • pode trocar de aplicativo; a captura continua em segundo plano"
+                error != null -> "Não iniciou: $error"
+                else -> "Pronto para gravar • sem internet, anúncios ou marca-d’água"
+            }
+            val started = prefs.getLong("started", 0L)
             timer.text = if (running && started > 0) "${(System.currentTimeMillis() - started) / 1000}s" else ""
             ui.postDelayed(this, 500)
         }
@@ -66,8 +72,8 @@ class MainActivity : Activity() {
         content.addView(gallery, params(bottom = 18))
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
-        content.addView(label("1. Escolha um perfil.\n2. Toque em Gravar e confirme a captura na janela oficial do Android.\n3. Para encerrar, use o botão nesta tela ou a notificação.\n\nA captura de áudio não está incluída nesta primeira versão. Telas protegidas pelo Android ou por aplicativos podem aparecer pretas.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  versão 0.1.0\nVídeos salvos em Movies/NexusScreenRecordPro", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("1. Escolha um perfil e toque em Gravar.\n2. Permita o áudio interno e confirme ‘Iniciar agora’ na janela do Android. A permissão de áudio é usada para captar o som reproduzido por apps; o microfone não é usado.\n3. Depois, abra o aplicativo ou vídeo que quer registrar. A gravação continua em segundo plano, capturando a imagem e o áudio interno permitido.\n4. Para encerrar, volte aqui e toque em Parar ou use a notificação.\n\nAlguns apps e conteúdos protegidos podem bloquear a captura de áudio ou imagem.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.5.0 para A13\nVídeo e áudio interno salvos em Movies/NexusScreenRecordPro", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
@@ -77,25 +83,66 @@ class MainActivity : Activity() {
     private fun onRecordTap() {
         val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
         if (prefs.getBoolean("running", false)) {
-            startService(Intent(this, ScreenRecordService::class.java).setAction(ScreenRecordService.ACTION_STOP))
+            runCatching { startService(Intent(this, ScreenRecordService::class.java).setAction(ScreenRecordService.ACTION_STOP)) }
+                .onFailure { showError("Não consegui parar: ${it.localizedMessage ?: it.javaClass.simpleName}") }
             return
         }
-        val projection = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        @Suppress("DEPRECATION") startActivityForResult(projection.createScreenCaptureIntent(), REQUEST_CAPTURE)
+        prefs.edit().remove("error").apply()
+        if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            state.text = "Autorize o áudio interno; o microfone não será usado."
+            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQUEST_AUDIO)
+            return
+        }
+        launchCaptureRequest()
+    }
+
+    private fun launchCaptureRequest() {
+        state.text = "Aguardando autorização de captura da tela…"
+        try {
+            val projection = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            @Suppress("DEPRECATION") startActivityForResult(projection.createScreenCaptureIntent(), REQUEST_CAPTURE)
+        } catch (t: Throwable) {
+            showError("Não abriu a autorização: ${t.localizedMessage ?: t.javaClass.simpleName}")
+        }
+    }
+
+    @Deprecated("Android permission callback for broad API compatibility")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_AUDIO) {
+            if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) launchCaptureRequest()
+            else showError("Permita o áudio para gravar o som interno. Nenhum microfone é usado.")
+        }
     }
 
     @Deprecated("Android activity result API for broad API compatibility")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CAPTURE && resultCode == RESULT_OK && data != null) {
-            val intent = Intent(this, ScreenRecordService::class.java).apply {
-                action = ScreenRecordService.ACTION_START
-                putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
-                putExtra(ScreenRecordService.EXTRA_DATA, data)
-                putExtra(ScreenRecordService.EXTRA_MODE, mode.selectedItemPosition)
+        if (requestCode == REQUEST_CAPTURE) {
+            if (resultCode != RESULT_OK || data == null) {
+                showError("Autorização de captura cancelada. Toque em Gravar e escolha ‘Iniciar agora’.")
+                return
             }
-            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
+            state.text = "Autorizado • iniciando gravador…"
+            try {
+                val intent = Intent(this, ScreenRecordService::class.java).apply {
+                    action = ScreenRecordService.ACTION_START
+                    putExtra(ScreenRecordService.EXTRA_RESULT_CODE, resultCode)
+                    putExtra(ScreenRecordService.EXTRA_DATA, data)
+                    putExtra(ScreenRecordService.EXTRA_MODE, mode.selectedItemPosition)
+                }
+                if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(intent) else startService(intent)
+                Toast.makeText(this, "Captura autorizada. O gravador está iniciando.", Toast.LENGTH_LONG).show()
+            } catch (t: Throwable) {
+                showError("Não consegui iniciar o serviço: ${t.localizedMessage ?: t.javaClass.simpleName}")
+            }
         }
+    }
+
+    private fun showError(message: String) {
+        getSharedPreferences("recorder", MODE_PRIVATE).edit().putString("error", message).apply()
+        state.text = "Não iniciou: $message"
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun showGallery() {
@@ -121,7 +168,7 @@ class MainActivity : Activity() {
     private fun matchWrap() = LinearLayout.LayoutParams(-1, -2)
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
-    companion object { private const val REQUEST_CAPTURE = 341 }
+    companion object { private const val REQUEST_CAPTURE = 341; private const val REQUEST_AUDIO = 342 }
 }
 
 private object AlertDialogCompat {
