@@ -13,18 +13,25 @@ android {
     }
 
     defaultConfig {
-        // Isolated install-test id so it cannot collide with earlier test builds.
-        applicationId = "com.nexusfuturistica.screenrecordpro.installdiagnostico"
+        // Fresh package ID for this install attempt avoids conflicts with prior test packages.
+        applicationId = "com.nexusfuturistica.screenrecordpro.a13installfix"
         minSdk = 29
-        targetSdk = 35
-        versionCode = 10
-        versionName = "0.4.0-a13-install-test"
+        targetSdk = 34
+        versionCode = 11
+        versionName = "0.4.1-a13-install-fix"
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            // Include both signature formats for compatibility with Android installers.
+            enableV1Signing = true
+            enableV2Signing = true
+        }
     }
 
     buildTypes {
         debug {
-            // Keep the APK signed with the debug key for sideload testing,
-            // but do not expose an app debuggable flag in the installed build.
+            signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
         }
     }
