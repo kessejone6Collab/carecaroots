@@ -73,7 +73,7 @@ class ScreenRecordService : Service() {
         override fun run() {
             if (!sessionActive) return
             refreshFloatingControl()
-            overlayHandler.postDelayed(this, 500)
+            overlayHandler.postDelayed(this, 1_000)
         }
     }
 
@@ -197,15 +197,18 @@ class ScreenRecordService : Service() {
         val sourceW = metrics.widthPixels; val sourceH = metrics.heightPixels
         // Choose by the screen's short edge. Using the long edge here reduced the A13
         // recording to 322x720 and made the saved video look blurred.
-        val targetShortEdge = when (mode) { 0 -> 720; 1 -> 900; else -> minOf(1080, minOf(sourceW, sourceH)) }
+        // A13 produced large frame gaps at its full 1080x2408 panel size. Keep
+        // the largest profile at a 720px short edge so the hardware encoder can
+        // sustain a smoother 30 FPS capture while retaining a clear portrait image.
+        val targetShortEdge = when (mode) { 0 -> 540; 1 -> 640; else -> 720 }
         val scale = minOf(1f, targetShortEdge.toFloat() / minOf(sourceW, sourceH).coerceAtLeast(1))
         displayWidth = even((sourceW * scale).toInt()); displayHeight = even((sourceH * scale).toInt())
-        bitRate = when (mode) { 0 -> 4_000_000; 1 -> 7_000_000; else -> 11_000_000 }
+        bitRate = when (mode) { 0 -> 2_500_000; 1 -> 3_800_000; else -> 5_500_000 }
     }
 
     private fun prepareEncoder() {
         val encoders = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.filter { info ->
-            info.isEncoder && info.supportedTypes.any { it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true) } &&
+            info.isEncoder && info.isHardwareAccelerated && info.supportedTypes.any { it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true) } &&
                 runCatching { info.getCapabilitiesForType(MediaFormat.MIMETYPE_VIDEO_AVC).colorFormats.contains(MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface) }.getOrDefault(false)
         }.sortedByDescending { it.isHardwareAccelerated }
         val targetWidth = displayWidth
@@ -232,7 +235,7 @@ class ScreenRecordService : Service() {
             }
             if (selected != null) break
         }
-        val codecInfo = selected ?: error("Este aparelho não oferece um codificador AVC compatível com a resolução de captura")
+        val codecInfo = selected ?: error("Este aparelho não oferece codificador AVC por hardware compatível com a gravação a 30 FPS")
         val videoCaps = selectedVideo ?: error("O codificador não informou os limites de vídeo")
         bitRate = bitRate.coerceIn(videoCaps.bitrateRange.lower, videoCaps.bitrateRange.upper)
         val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, displayWidth, displayHeight).apply {
@@ -551,7 +554,9 @@ class ScreenRecordService : Service() {
             }
         }
         val overlayType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+            WindowManager.LayoutParams.FLAG_SECURE
         val params = WindowManager.LayoutParams(dp(76), dp(62), overlayType, windowFlags, PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.START
             val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
@@ -611,7 +616,8 @@ class ScreenRecordService : Service() {
             targetWidth,
             targetHeight,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_SECURE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START

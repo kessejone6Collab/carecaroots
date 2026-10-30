@@ -68,7 +68,7 @@ class MainActivity : Activity() {
 
         content.addView(label("PERFIL DE GRAVAÇÃO", 13, 0xFFFFC857.toInt(), true), matchWrap())
         mode = Spinner(this)
-        val profiles = listOf("Leve • 720p / 30 FPS", "Equilibrado • até 900p / 30 FPS", "Alta qualidade • máximo suportado / 30 FPS")
+        val profiles = listOf("Leve • 540p / 30 FPS", "Equilibrado • 640p / 30 FPS", "Alta qualidade • até 720p / 30 FPS")
         val profileAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, profiles) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View =
                 (super.getView(position, convertView, parent) as TextView).apply { setTextColor(0xFFF4F7FB.toInt()); textSize = 16f }
@@ -99,7 +99,7 @@ class MainActivity : Activity() {
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
         content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno; depois confirme ‘Iniciar agora’. O microfone não é usado.\n3. A bolha aparece na tela. Abra o jogo, YouTube ou outro app e toque nela para começar; toque de novo para parar.\n4. Arraste a bolha para mover. O X aparece enquanto você arrasta; solte nele para remover o controle.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.7.0 para A13\nImagem otimizada e áudio interno salvos na galeria", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.0 para A13\nVídeo otimizado para fluidez e áudio interno", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
