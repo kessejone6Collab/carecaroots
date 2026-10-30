@@ -156,7 +156,7 @@ class MainActivity : Activity() {
         try {
             val projection = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             val captureIntent = if (android.os.Build.VERSION.SDK_INT >= 34) {
-                projection.createScreenCaptureIntent(MediaProjectionConfig.createConfigForUserChoice(this))
+                projection.createScreenCaptureIntent(MediaProjectionConfig.createConfigForUserChoice())
             } else projection.createScreenCaptureIntent()
             @Suppress("DEPRECATION") startActivityForResult(captureIntent, REQUEST_CAPTURE)
         } catch (t: Throwable) {
