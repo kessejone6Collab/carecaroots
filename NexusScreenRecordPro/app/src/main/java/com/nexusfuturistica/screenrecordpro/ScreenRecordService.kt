@@ -71,7 +71,7 @@ class ScreenRecordService : Service() {
     private val overlayHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val overlayRefresh = object : Runnable {
         override fun run() {
-            if (!sessionActive) return
+            if (!sessionActive || floatingView == null) return
             refreshFloatingControl()
             overlayHandler.postDelayed(this, 1_000)
         }
@@ -132,6 +132,9 @@ class ScreenRecordService : Service() {
 
     private fun startCapture() {
         if (!sessionActive || recording || stopping.get()) return
+        // Remove the control before attaching the encoder surface to the
+        // projection. A secure overlay becomes a black rectangle in recordings.
+        removeFloatingControls()
         try {
             stopping.set(false)
             closeAfterStop = false
@@ -170,8 +173,7 @@ class ScreenRecordService : Service() {
             getSharedPreferences("recorder", MODE_PRIVATE).edit().putBoolean("running", true).putLong("started", System.currentTimeMillis()).apply()
             worker = Thread({ drainEncoder() }, "NexusRecorderEncoder").apply { start() }
             audioWorker = Thread({ captureAndDrainAudio() }, "NexusPlaybackAudio").apply { start() }
-            updateNotification("Tela e áudio interno em gravação")
-            refreshFloatingControl()
+            updateNotification("Gravando • use Parar nesta notificação; o controle volta ao encerrar")
         } catch (t: Throwable) {
             Log.e(TAG, "Falha ao iniciar gravação", t)
             getSharedPreferences("recorder", MODE_PRIVATE).edit()
@@ -450,10 +452,20 @@ class ScreenRecordService : Service() {
         outputUri = null; videoTrack = -1; audioTrack = -1
         worker = null; audioWorker = null
         getSharedPreferences("recorder", MODE_PRIVATE).edit().putBoolean("running", false).putLong("started", 0).apply()
-        overlayHandler.post { refreshFloatingControl() }
+        overlayHandler.post {
+            if (sessionActive) {
+                if (floatingView == null) runCatching { showFloatingControls() }
+                    .onFailure { t ->
+                        Log.e(TAG, "Não consegui restaurar o controle flutuante", t)
+                        getSharedPreferences("recorder", MODE_PRIVATE).edit()
+                            .putString("error", t.localizedMessage ?: "Não consegui restaurar o controle flutuante").apply()
+                    }
+                refreshFloatingControl()
+            }
+        }
         if (closeAfterStop) {
             closeAfterStop = false
-            closeSession()
+            overlayHandler.post { closeSession() }
         } else if (sessionActive) {
             stopping.set(false)
             updateNotification("Controle pronto • toque no botão flutuante para gravar")
@@ -554,9 +566,7 @@ class ScreenRecordService : Service() {
             }
         }
         val overlayType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-            WindowManager.LayoutParams.FLAG_SECURE
+        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
         val params = WindowManager.LayoutParams(dp(76), dp(62), overlayType, windowFlags, PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.START
             val prefs = getSharedPreferences("recorder", MODE_PRIVATE)
@@ -617,7 +627,7 @@ class ScreenRecordService : Service() {
             targetHeight,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START

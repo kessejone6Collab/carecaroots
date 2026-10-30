@@ -37,7 +37,7 @@ class MainActivity : Activity() {
             start.setBackgroundColor(if (running) 0xFFB3263E.toInt() else if (session) 0xFF675A2B.toInt() else 0xFF087A9B.toInt())
             val error = prefs.getString("error", null)
             state.text = when {
-                running -> "●  GRAVANDO AGORA\nTela e áudio interno ativos. Você pode trocar de aplicativo."
+                running -> "●  GRAVANDO AGORA\nControle oculto para deixar a imagem limpa. Para parar, abra as notificações e toque em Parar gravação."
                 session -> "CONTROLE FLUTUANTE ATIVO\nVá para o jogo ou vídeo e toque na bolha para começar."
                 error != null -> "Não iniciou: $error"
                 else -> "Ative o controle e grave direto no jogo, YouTube ou qualquer tela."
@@ -98,8 +98,8 @@ class MainActivity : Activity() {
         content.addView(gallery, params(bottom = 18))
 
         content.addView(label("COMO USAR", 15, 0xFFFFC857.toInt(), true), params(bottom = 6))
-        content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno; depois confirme ‘Iniciar agora’. O microfone não é usado.\n3. A bolha aparece na tela. Abra o jogo, YouTube ou outro app e toque nela para começar; toque de novo para parar.\n4. Arraste a bolha para mover. O X aparece enquanto você arrasta; solte nele para remover o controle.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
-        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.0 para A13\nVídeo otimizado para fluidez e áudio interno", 11, 0xFF8495A9.toInt(), false), matchWrap())
+        content.addView(label("1. Escolha a qualidade e toque em Ativar controle flutuante.\n2. Permita ‘aparecer sobre outros apps’, notificações e áudio interno; depois confirme ‘Iniciar agora’. O microfone não é usado.\n3. Abra o jogo, YouTube ou outro app e toque na bolha para começar. Ela some durante a gravação para não cobrir nem deixar marca preta no vídeo.\n4. Para parar, abra as notificações e toque em Parar gravação. A bolha volta quando o vídeo for salvo.\n\nA gravação é salva em Movies/NexusScreenRecordPro. Alguns apps protegidos podem bloquear imagem ou áudio.", 14, 0xFFCCD7E4.toInt(), false), params(bottom = 20))
+        content.addView(label("NEXUS SCREEN RECORD PRO  •  teste 0.8.1 para A13\nVídeo limpo, sem controle sobreposto", 11, 0xFF8495A9.toInt(), false), matchWrap())
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
     }
 
