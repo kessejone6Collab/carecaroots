@@ -36,6 +36,7 @@ test('manifest icons exist and declare the expected square dimensions', () => {
 
 test('service worker caches the app shell and handles offline navigation', () => {
   assert.match(worker, /addEventListener\("install"/);
+  assert.match(worker, /loto-careca-roots-pwa-v2/);
   assert.match(worker, /addEventListener\("activate"/);
   assert.match(worker, /addEventListener\("fetch"/);
   assert.match(worker, /request\.mode === "navigate"/);
