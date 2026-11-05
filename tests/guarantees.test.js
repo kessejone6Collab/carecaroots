@@ -36,6 +36,7 @@ function loadApp() {
   const elements = {};
   const storage = {};
   const downloads = [];
+  const timers = [];
   const blobs = new Map();
   const document = {
     getElementById(id) { return elements[id] ??= new Element(); },
@@ -44,6 +45,7 @@ function loadApp() {
   };
   const context = {
     __downloads: downloads,
+    __timers: timers,
     __storage: storage,
     document,
     localStorage: {
@@ -53,14 +55,14 @@ function loadApp() {
     Option: function (text, value) { this.text = String(text); this.value = String(value); },
     URL: { createObjectURL(blob) { const url = `blob:${blobs.size}`; blobs.set(url, blob); return url; }, revokeObjectURL() {} },
     Blob: function (parts, options) { this.parts = parts; this.type = options.type; },
-    setTimeout() {},
+    setTimeout(callback) { timers.push(callback); return timers.length; },
     confirm() { return true; },
     Date, JSON, Math, Number, Array, Set, Map, Error,
   };
   vm.createContext(context);
   vm.runInContext(`${script}
     globalThis.appTest = {
-      render, generate, save, check, getHistory, combos, overlap, backup, exportTxt, restoreHistory,
+      render, generate, generateAsync, cancelGeneration, save, check, getHistory, combos, overlap, backup, exportTxt, restoreHistory,
       downloads: globalThis.__downloads, clearHistory() { globalThis.__storage['loto-careca-roots'] = null; },
       set(kindValue, numbers, condition, guarantee) {
         kind = kindValue; chosen = numbers; mode = 'cover'; render();
@@ -69,6 +71,7 @@ function loadApp() {
         $('guarantee').value = String(guarantee);
       },
       state() { return { games, details }; },
+      drainTimers() { let steps = 0; while (globalThis.__timers.length && steps++ < 100000) globalThis.__timers.shift()(); return steps; },
       setDraw(numbers) { drawn = numbers; },
       element(id) { return $(id); },
     };`, context);
@@ -175,4 +178,27 @@ test('TXT, backup and restore preserve saved games', async () => {
   await app.restoreHistory(event);
   assert.equal(app.getHistory().length, 1);
   assert.equal(event.target.value, '');
+});
+
+
+
+test('asynchronous mobile closure verifies every scenario for all three lotteries', () => {
+  const cases = [
+    ['lotofacil', Array.from({ length: 16 }, (_, i) => i + 1), 14, 14, 120],
+    ['mega', [1, 2, 3, 4, 5, 6, 7], 1, 1, 7],
+    ['quina', [1, 2, 3, 4, 5, 6], 1, 1, 6],
+  ];
+  for (const [kind, selected, condition, guarantee, count] of cases) {
+    const app = loadApp();
+    app.set(kind, selected, condition, guarantee);
+    app.generateAsync();
+    assert.ok(app.drainTimers() < 100000, 'async generation yields to completion');
+    assert.match(app.element('message').textContent, /Garantia condicional verificada/);
+    const scenarios = combinations(selected, condition);
+    assert.equal(scenarios.length, count);
+    for (const scenario of scenarios) {
+      assert.ok(app.state().games.some(game => app.overlap(game, scenario) >= guarantee),
+        `uncovered async ${kind} scenario: ${scenario.join(',')}`);
+    }
+  }
 });
