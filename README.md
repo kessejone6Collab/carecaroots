@@ -1,38 +1,30 @@
 # LotoFechamento Pro — Careca Roots
 
-Aplicativo estático para Lotofácil, Mega-Sena, Quina e Lotomania. O app não prevê sorteios.
+Aplicativo para Lotofácil, Mega-Sena, Quina e Lotomania. O app organiza combinações, confere jogos e guarda o histórico neste navegador. Ele não prevê sorteios nem garante prêmio.
+
+## Carrossel
+
+A capa reúne oito banners ilustrados com imagens locais do aplicativo. Eles passam automaticamente a cada 3,5 segundos; as setas e os pontos permitem navegar manualmente. Os textos explicam as modalidades, as faixas numéricas e os limites do app.
 
 ## Modalidades
 
-- Lotofácil: aposta simples com 15 dezenas entre 01 e 25.
-- Mega-Sena: aposta simples com 6 dezenas entre 01 e 60.
-- Quina: aposta simples com 5 dezenas entre 01 e 80.
-- Lotomania: aposta com 50 dezenas entre 00 e 99; o sorteio extrai 20 números.
+- Lotofácil: selecione de 15 a 20 dezenas entre 01 e 25.
+- Mega-Sena: selecione de 6 a 20 dezenas entre 01 e 60.
+- Quina: selecione de 5 a 15 dezenas entre 01 e 80.
+- Lotomania: marque 50 dezenas entre 00 e 99; o sorteio usa 20 números.
 
-## Resultados nos banners
+## Garantias condicionais
 
-Quatro banners são reservados para os resultados da Mega-Sena, Lotofácil, Quina e Lotomania. Cada banner de resultado permanece por 12 segundos; os outros quatro permanecem por 3,5 segundos. O app consulta o serviço de resultados da CAIXA a cada 30 minutos enquanto está aberto, valida concurso, data e dezenas e mantém o último resultado válido salvo no dispositivo quando a consulta falha.
-
-**Limitação atual do teste:** o serviço da CAIXA respondeu HTTP 403 às consultas de servidores no Vercel (incluindo na região de São Paulo) e no GitHub Actions. Por isso a versão de teste informa indisponibilidade e não exibe números como se fossem atuais. A atualização automática só fica validada quando a fonte voltar a aceitar essas consultas.
-
-## Como as garantias condicionais funcionam
-
-- **Desdobrar tudo** lista todas as combinações possíveis da seleção, até o limite de 10.000 apostas.
-- **Fechamento verificado** recebe uma condição exata: quantas dezenas sorteadas estão dentro da seleção. O gerador enumera todos os cenários possíveis dessa condição e só exibe a garantia depois de confirmar que algum jogo atende ao mínimo escolhido em cada cenário.
-- As opções da condição respeitam os limites matemáticos da loteria e da quantidade selecionada. Zero acertos dentro da seleção é permitido quando for possível; nesse caso, a garantia possível é zero.
-- Uma garantia condicional não prevê o resultado nem garante prêmio, probabilidade de ganho ou retorno financeiro.
+O fechamento verificado enumera os cenários possíveis da condição escolhida e só declara a cobertura quando todos os cenários selecionados foram conferidos. Isso não prevê o sorteio nem garante prêmio ou retorno financeiro.
 
 ## Histórico e backups
 
-O histórico fica no armazenamento local do navegador e dispositivo em que os jogos foram salvos. Use **Baixar backup** antes de limpar os dados do navegador ou trocar de dispositivo. Restaurar um backup substitui o histórico local após confirmação.
+O histórico fica salvo neste navegador e aparelho. Use **Baixar backup** antes de limpar os dados ou trocar de dispositivo. Restaurar um backup substitui o histórico local após confirmação.
 
-## Testes de regressão
+## Testes
 
-Com Node.js instalado, execute na raiz do repositório:
+Execute na raiz do repositório:
 
 ```sh
-node --test tests/guarantees.test.js tests/pwa.test.js tests/results-api.test.js
+node --test tests/guarantees.test.js tests/pwa.test.js
 ```
-
-Os testes percorrem cenários exaustivos de garantia para as quatro modalidades, condições impossíveis, opções válidas e salvamento repetido.
-
