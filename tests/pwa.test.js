@@ -41,3 +41,15 @@ test('service worker caches the app shell and handles offline navigation', () =>
   assert.match(worker, /request\.mode === "navigate"/);
   assert.match(worker, /caches\.match\("\.\/index\.html"\)/);
 });
+
+
+test('mobile neon carousel has eight accessible legal-lottery illustrations and rotates every 3.5 seconds', () => {
+  assert.equal((html.match(/class="banner-slide /g) || []).length, 8);
+  assert.match(html, /setInterval\(\(\)=>\{if\(!document\.hidden\)showBanner\(bannerIndex\+1\)\},3500\)/);
+  assert.match(html, /aria-label="Banner anterior"/);
+  assert.match(html, /aria-label="Próximo banner"/);
+  assert.match(html, /Lotomania aparece apenas como referência visual e não é gerada por este app/);
+  assert.match(html, /https:\/\/loterias\.caixa\.gov\.br\/Paginas\/regras-sorteios\.aspx/);
+  assert.match(html, /id="generateBtn" onclick="generateAsync\(\)"/);
+  assert.match(html, /touch-action:manipulation/);
+});
