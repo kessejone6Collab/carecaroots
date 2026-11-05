@@ -1,4 +1,4 @@
-const CACHE_NAME = "loto-careca-roots-pwa-v3";
+const CACHE_NAME = "loto-careca-roots-pwa-v4";
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.svg", "./icon-512.svg", "./assets/banner-mega.webp", "./assets/banner-lotofacil.webp", "./assets/banner-quina.webp", "./assets/banner-lotomania.webp", "./assets/banner-sorteio.webp", "./assets/banner-estimativa.webp", "./assets/banner-casa.webp", "./assets/banner-numeros.webp"];
 
 self.addEventListener("install", event => {
@@ -16,6 +16,17 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
+
+  if (new URL(request.url).pathname.endsWith("/api/loterias")) {
+    event.respondWith(fetch(request).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+      }
+      return response;
+    }).catch(() => caches.match(request)));
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).then(response => {

@@ -36,7 +36,7 @@ test('manifest icons exist and declare the expected square dimensions', () => {
 
 test('service worker caches the app shell and handles offline navigation', () => {
   assert.match(worker, /addEventListener\("install"/);
-  assert.match(worker, /loto-careca-roots-pwa-v3/);
+  assert.match(worker, /loto-careca-roots-pwa-v4/);
   assert.match(worker, /addEventListener\("activate"/);
   assert.match(worker, /addEventListener\("fetch"/);
   assert.match(worker, /request\.mode === "navigate"/);
@@ -48,10 +48,14 @@ test('mobile hero combines the app identity with eight photographic lottery bann
   assert.equal((html.match(/class="hero-slide /g) || []).length, 8);
   assert.match(html, /LOTOFECHAMENTO <em>PRO<\/em>/);
   assert.match(html, /CARECA ROOTS/);
-  assert.match(html, /setInterval\(\(\)=>\{if\(!document\.hidden\)showBanner\(bannerIndex\+1\)\},3500\)/);
+  assert.match(html, /function scheduleBanner\(\).*dataset\.duration/);
   assert.match(html, /aria-label="Banner anterior"/);
   assert.match(html, /aria-label="Próximo banner"/);
   assert.match(html, /Lotomania/);
+  assert.equal((html.match(/data-duration="12000"/g) || []).length, 4);
+  assert.equal((html.match(/data-duration="3500"/g) || []).length, 4);
+  assert.equal((html.match(/data-result="/g) || []).length, 4);
+  assert.match(html, /refreshOfficialResults/);
   assert.match(html, /ABRIR LOTERIAS CAIXA/);
   for (const image of ['banner-mega.webp', 'banner-lotofacil.webp', 'banner-quina.webp', 'banner-lotomania.webp', 'banner-sorteio.webp', 'banner-estimativa.webp', 'banner-casa.webp', 'banner-numeros.webp']) {
     assert.ok(fs.existsSync('assets/' + image), image + ' is packaged locally');

@@ -2,7 +2,7 @@ name: App regression tests
 
 on:
   push:
-    branches: [main, fix/garantias-e-historico]
+    branches: [main, fix/garantias-e-historico, feat/neon-carrossel-mobile-careca]
   pull_request:
     branches: [main]
 
@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: 20
       - name: Run regression tests
-        run: node --test tests/guarantees.test.js tests/pwa.test.js
+        run: node --test tests/guarantees.test.js tests/pwa.test.js tests/results-api.test.js
