@@ -1,8 +1,8 @@
 # LotoFechamento Pro — Careca Roots
 
-Aplicativo estático para Lotofácil, Mega-Sena e Quina. O app não prevê sorteios.
+Aplicativo estático para Lotofácil, Mega-Sena, Quina e Lotomania. O app não prevê sorteios.
 
-## Como as garantias condicionais funcionam
+## Modalidades\n\n- Lotofácil: aposta simples com 15 dezenas entre 01 e 25.\n- Mega-Sena: aposta simples com 6 dezenas entre 01 e 60.\n- Quina: aposta simples com 5 dezenas entre 01 e 80.\n- Lotomania: aposta com 50 dezenas entre 00 e 99; o sorteio extrai 20 números.\n\n## Como as garantias condicionais funcionam
 
 - **Desdobrar tudo** lista todas as combinações possíveis da seleção, até o limite de 10.000 apostas.
 - **Fechamento verificado** recebe uma condição exata: quantas dezenas sorteadas estão dentro da seleção. O gerador enumera todos os cenários possíveis dessa condição e só exibe a garantia depois de confirmar que algum jogo atende ao mínimo escolhido em cada cenário.
@@ -18,7 +18,8 @@ O histórico fica no armazenamento local do navegador e dispositivo em que os jo
 Com Node.js instalado, execute na raiz do repositório:
 
 ```sh
-node --test tests/guarantees.test.js
+node --test tests/guarantees.test.js tests/pwa.test.js
 ```
 
-Os testes percorrem cenários exaustivos de garantia para as três loterias, condições impossíveis, opções válidas e salvamento repetido.
+Os testes percorrem cenários exaustivos de garantia para as quatro modalidades, condições impossíveis, opções válidas e salvamento repetido.
+
