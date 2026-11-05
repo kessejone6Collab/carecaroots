@@ -13,7 +13,7 @@ Aplicativo estático para Lotofácil, Mega-Sena, Quina e Lotomania. O app não p
 
 Quatro banners são reservados para os resultados da Mega-Sena, Lotofácil, Quina e Lotomania. Cada banner de resultado permanece por 12 segundos; os outros quatro permanecem por 3,5 segundos. O app consulta o serviço de resultados da CAIXA a cada 30 minutos enquanto está aberto, valida concurso, data e dezenas e mantém o último resultado válido salvo no dispositivo quando a consulta falha.
 
-**Limitação atual do teste:** o serviço da CAIXA respondeu HTTP 403 às consultas do servidor Vercel, inclusive na região de São Paulo. Por isso a versão de teste informa indisponibilidade e não exibe números como se fossem atuais. A atualização automática só fica validada quando a fonte voltar a aceitar essas consultas.
+**Limitação atual do teste:** o serviço da CAIXA respondeu HTTP 403 às consultas de servidores no Vercel (incluindo na região de São Paulo) e no GitHub Actions. Por isso a versão de teste informa indisponibilidade e não exibe números como se fossem atuais. A atualização automática só fica validada quando a fonte voltar a aceitar essas consultas.
 
 ## Como as garantias condicionais funcionam
 
