@@ -36,7 +36,7 @@ test('manifest icons exist and declare the expected square dimensions', () => {
 
 test('service worker caches the app shell and handles offline navigation', () => {
   assert.match(worker, /addEventListener\("install"/);
-  assert.match(worker, /loto-careca-roots-pwa-v2/);
+  assert.match(worker, /loto-careca-roots-pwa-v3/);
   assert.match(worker, /addEventListener\("activate"/);
   assert.match(worker, /addEventListener\("fetch"/);
   assert.match(worker, /request\.mode === "navigate"/);
@@ -44,13 +44,24 @@ test('service worker caches the app shell and handles offline navigation', () =>
 });
 
 
-test('mobile neon carousel has eight accessible legal-lottery illustrations and rotates every 3.5 seconds', () => {
-  assert.equal((html.match(/class="banner-slide /g) || []).length, 8);
+test('mobile hero combines the app identity with eight photographic lottery banners', () => {
+  assert.equal((html.match(/class="hero-slide /g) || []).length, 8);
+  assert.match(html, /LOTOFECHAMENTO <em>PRO<\/em>/);
+  assert.match(html, /CARECA ROOTS/);
   assert.match(html, /setInterval\(\(\)=>\{if\(!document\.hidden\)showBanner\(bannerIndex\+1\)\},3500\)/);
   assert.match(html, /aria-label="Banner anterior"/);
   assert.match(html, /aria-label="Próximo banner"/);
-  assert.match(html, /Lotomania aparece apenas como referência visual e não é gerada por este app/);
-  assert.match(html, /https:\/\/loterias\.caixa\.gov\.br\/Paginas\/regras-sorteios\.aspx/);
-  assert.match(html, /id="generateBtn" onclick="generateAsync\(\)"/);
+  assert.match(html, /Lotomania/);
+  assert.match(html, /ABRIR LOTERIAS CAIXA/);
+  for (const image of ['banner-mega.webp', 'banner-lotofacil.webp', 'banner-quina.webp', 'banner-lotomania.webp', 'banner-sorteio.webp', 'banner-estimativa.webp', 'banner-casa.webp', 'banner-numeros.webp']) {
+    assert.ok(fs.existsSync('assets/' + image), image + ' is packaged locally');
+    assert.ok(html.includes(image), image + ' is used by the carousel');
+    assert.ok(worker.includes('./assets/' + image), image + ' is cached for the installed app');
+  }
+});
+
+test('number pads use large neon touch targets, including Lotomania 00-99', () => {
+  assert.match(html, /min-height:52px/);
   assert.match(html, /touch-action:manipulation/);
+  assert.match(html, /id="generateBtn" onclick="generateAsync\(\)"/);
 });
