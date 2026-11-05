@@ -24,6 +24,7 @@ class Element {
   get innerHTML() { return this.html; }
   append(value) { this.children.push(value); }
   add(value) { this.options.push(value); }
+  setAttribute(name, value) { this.attributes ??= {}; this.attributes[name] = value; }
   click() { if (this.download) this.contextDownload?.(this); }
   remove() {}
 }
@@ -182,11 +183,12 @@ test('TXT, backup and restore preserve saved games', async () => {
 
 
 
-test('asynchronous mobile closure verifies every scenario for all three lotteries', () => {
+test('asynchronous mobile closure verifies every scenario for all four modalities', () => {
   const cases = [
     ['lotofacil', Array.from({ length: 16 }, (_, i) => i + 1), 14, 14, 120],
     ['mega', [1, 2, 3, 4, 5, 6, 7], 1, 1, 7],
     ['quina', [1, 2, 3, 4, 5, 6], 1, 1, 6],
+    ['lotomania', Array.from({ length: 50 }, (_, i) => i), 1, 1, 50],
   ];
   for (const [kind, selected, condition, guarantee, count] of cases) {
     const app = loadApp();
@@ -201,4 +203,21 @@ test('asynchronous mobile closure verifies every scenario for all three lotterie
         `uncovered async ${kind} scenario: ${scenario.join(',')}`);
     }
   }
+});
+
+
+
+test('Lotomania grid runs from 00 to 99 and builds a 50-number ticket', () => {
+  const app = loadApp();
+  const selected = Array.from({ length: 50 }, (_, i) => i);
+  app.set('lotomania', selected, 1, 1);
+  assert.equal(app.element('numbers').children.length, 100);
+  assert.equal(app.element('numbers').children[0].textContent, '00');
+  assert.equal(app.element('numbers').children[99].textContent, '99');
+  assert.match(app.element('count').textContent, /mínimo 50, máximo 50/);
+  app.generateAsync();
+  app.drainTimers();
+  assert.match(app.element('message').textContent, /Garantia condicional verificada/);
+  assert.equal(app.state().games.length, 1);
+  assert.deepEqual(app.state().games[0], selected);
 });
