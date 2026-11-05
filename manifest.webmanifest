@@ -1,7 +1,7 @@
 {
   "name": "LotoFechamento Pro — Careca Roots",
   "short_name": "LotoFechamento",
-  "description": "Fechamentos e desdobramentos para Lotofácil, Mega-Sena e Quina.",
+  "description": "Fechamentos e desdobramentos para Lotofácil, Mega-Sena, Quina e Lotomania.",
   "lang": "pt-BR",
   "start_url": "./?source=pwa",
   "scope": "./",
