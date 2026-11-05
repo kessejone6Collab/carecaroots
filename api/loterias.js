@@ -20,7 +20,8 @@ async function readLatest(game, config) {
     headers: {
       Accept: "application/json, text/plain, */*",
       Origin: "https://loterias.caixa.gov.br",
-      Referer: "https://loterias.caixa.gov.br/",
+      Referer: "https://loterias.caixa.gov.br/Paginas/default.aspx",
+      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     },
     signal: AbortSignal.timeout(8000),
   });
