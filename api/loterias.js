@@ -37,7 +37,9 @@ async function readLatest(game, config) {
 }
 module.exports = async function handler(req, res) {
   const origin = req.headers?.origin;
-  if (ALLOWED_ORIGINS.has(origin)) {
+  const isVercelPreview = typeof origin === "string" &&
+    /^https:\/\/careca-roots-[a-z0-9-]+-kessejone6-7333\.vercel\.app$/.test(origin);
+  if (ALLOWED_ORIGINS.has(origin) || isVercelPreview) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
