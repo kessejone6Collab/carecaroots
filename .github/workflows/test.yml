@@ -2,7 +2,7 @@ name: App regression tests
 
 on:
   push:
-    branches: [main, fix/garantias-e-historico]
+    branches: [main, fix/garantias-e-historico, feat/neon-carrossel-mobile-careca]
   pull_request:
     branches: [main]
 
