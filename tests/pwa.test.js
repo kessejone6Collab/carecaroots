@@ -57,7 +57,7 @@ test('mobile hero combines the app identity with eight photographic lottery bann
   for (const image of ['banner-mega.webp', 'banner-lotofacil.webp', 'banner-quina.webp', 'banner-lotomania.webp', 'banner-sorteio.webp', 'banner-estimativa.webp', 'banner-casa.webp', 'banner-numeros.webp']) {
     assert.ok(fs.existsSync('assets/' + image), image + ' is packaged locally');
     assert.ok(html.includes(image), image + ' is used by the carousel');
-    assert.ok(worker.includes('./assets/' + image), image + ' is cached for the installed app');
+
   }
 });
 
@@ -79,4 +79,5 @@ test('lightweight app shell does not require downloading banners before service-
   assert.match(worker, /icon-192\.png/);
   assert.match(worker, /icon-512\.png/);
   assert.doesNotMatch(worker.split('const APP_SHELL = ')[1].split(';')[0], /banner-.*\.webp/);
+  assert.match(worker, /cache\.put\(request, copy\)/);
 });
