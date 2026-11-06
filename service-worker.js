@@ -1,5 +1,5 @@
-const CACHE_NAME = "loto-careca-roots-pwa-v5";
-const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.svg", "./icon-512.svg", "./assets/banner-mega.webp", "./assets/banner-lotofacil.webp", "./assets/banner-quina.webp", "./assets/banner-lotomania.webp", "./assets/banner-sorteio.webp", "./assets/banner-estimativa.webp", "./assets/banner-casa.webp", "./assets/banner-numeros.webp"];
+const CACHE_NAME = "loto-careca-roots-pwa-v6";
+const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-192.svg", "./icon-512.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
